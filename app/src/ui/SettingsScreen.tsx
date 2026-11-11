@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { controller } from '../app/controller'
-import { fmtMi, useApp } from '../app/useApp'
+import { fmtDate, fmtMi, useApp } from '../app/useApp'
 import { HOSTED_CITIES } from '../data/cityStore'
 
 function FileButton({ label, accept, onFile, disabled }: { label: string; accept: string; onFile: (f: File) => void; disabled?: boolean }) {
@@ -62,7 +62,10 @@ export function SettingsScreen({ onBack, onDebug }: { onBack: () => void; onDebu
         <div className="label">Backup · tracks, progress, notes, photos</div>
         <div className="row">
           <button className="grow" onClick={() => controller.exportBackup()}>
-            EXPORT BACKUP
+            EXPORT
+          </button>
+          <button className="grow" onClick={() => controller.exportBackup('share')}>
+            SHARE
           </button>
           <FileButton label="RESTORE" accept=".json,application/json" disabled={!!s.walk} onFile={setConfirmRestore} />
         </div>
@@ -80,8 +83,10 @@ export function SettingsScreen({ onBack, onDebug }: { onBack: () => void; onDebu
           </div>
         )}
         <div className="label">
-          Storage: {s.persisted === true ? 'persistent' : s.persisted === false ? 'NOT persistent, may be cleared by the browser' : 'unknown'}
+          Last backup: {s.lastBackup ? fmtDate(s.lastBackup) : 'never'} · storage{' '}
+          {s.persisted === true ? 'persistent' : s.persisted === false ? 'NOT persistent (install the app to fix)' : 'unknown'}
         </div>
+        <div className="label">Export saves to Downloads. Share sends it to Drive, email or another app.</div>
       </section>
 
       <section className="panel">

@@ -50,6 +50,7 @@ export interface AppState {
   battery: BatteryState | null
   wakeLock: boolean
   persisted: boolean | null
+  lastBackup: number | null
   hidden: boolean
   pausedNotice: { from: number; to: number } | null
   replay: { speed: number } | null
@@ -84,6 +85,7 @@ const initial: AppState = {
   battery: null,
   wakeLock: false,
   persisted: null,
+  lastBackup: null,
   hidden: false,
   pausedNotice: null,
   replay: null,
@@ -149,7 +151,11 @@ export class Controller {
     document.addEventListener('visibilitychange', this.onVisibility)
     setInterval(this.tick, 1000)
     void watchBattery((b) => this.onBattery(b))
-    void requestPersistence().then((persisted) => this.set({ persisted }))
+    const askPersist = () => void requestPersistence().then((persisted) => this.set({ persisted }))
+    askPersist()
+    // Chrome usually grants persistent storage once the app is installed.
+    window.addEventListener('appinstalled', askPersist)
+    this.set({ lastBackup: (await getMeta<number>('lastBackup')) ?? null })
 
     const settings = (await getMeta<Settings>('settings')) ?? initial.settings
     this.set({ settings })
@@ -612,13 +618,27 @@ export class Controller {
     await this.rebuildProgress()
   }
 
-  async exportBackup() {
+  /** Save a backup file. "share" opens Android's share sheet (Drive, email, …) where supported. */
+  async exportBackup(mode: 'download' | 'share' = 'download') {
     this.set({ busy: 'Exporting backup…' })
     try {
       const { blob, name, counts } = await exportBackup()
-      downloadBlob(blob, name)
-      await setMeta('lastBackup', Date.now())
-      this.toast(`BACKUP SAVED · ${counts}`)
+      const file = new File([blob], name, { type: 'application/json' })
+      let shared = false
+      if (mode === 'share' && navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: 'StickerPro backup' })
+          shared = true
+        } catch (e) {
+          if ((e as DOMException).name === 'AbortError') return
+          // The tap's permission can expire while the backup is built; fall back to a download.
+        }
+      }
+      if (!shared) downloadBlob(blob, name)
+      const lastBackup = Date.now()
+      await setMeta('lastBackup', lastBackup)
+      this.set({ lastBackup })
+      this.toast(`BACKUP ${shared ? 'SHARED' : 'SAVED TO DOWNLOADS'} · ${counts}`)
     } catch (e) {
       this.toast(`Export failed: ${(e as Error).message}`, 'error')
     } finally {

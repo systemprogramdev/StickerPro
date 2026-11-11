@@ -141,6 +141,16 @@ export function WalkSummarySheet() {
           Battery {w.batteryStart}% → {w.batteryEnd ?? '?'}%
         </div>
       )}
+      {!w.replay && (
+        <div className="row">
+          <button className="grow" onClick={() => controller.exportBackup()}>
+            SAVE BACKUP
+          </button>
+          <button className="grow" onClick={() => controller.exportBackup('share')}>
+            SHARE BACKUP
+          </button>
+        </div>
+      )}
       <button onClick={() => controller.dismissSummary()}>OK</button>
     </Sheet>
   )

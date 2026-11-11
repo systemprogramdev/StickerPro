@@ -30,4 +30,5 @@ export const THRESHOLDS = {
   photoQuality: 0.85,
   unlockHoldMs: 2000,
   pausedNoticeMs: 8000,
+  backupNagDays: 7, // warn on the map when storage is not persistent and no backup this recent
 } as const

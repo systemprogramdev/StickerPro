@@ -5,6 +5,7 @@ import { THRESHOLDS as T } from '../config/thresholds'
 import { HOSTED_CITIES } from '../data/cityStore'
 import { promptInstall, useCanInstall } from '../services/install'
 import { dayKey } from '../core/stats'
+import { MapErrorBoundary } from './MapErrorBoundary'
 import { MapView, type Pin, type StreetInfo } from './MapView'
 import { RouteMenu } from './Overlays'
 
@@ -79,7 +80,8 @@ function Warnings() {
   if (s.pausedNotice)
     w.push(`TRACKING PAUSED for ${Math.round((s.pausedNotice.to - s.pausedNotice.from) / 1000)} s while the app was hidden`)
   if (s.walk && !s.walk.replay && !s.wakeLock && !s.hidden) w.push('SCREEN LOCK NOT HELD · keep the app open')
-  if (s.persisted === false) w.push('STORAGE NOT PERSISTENT · export backups often')
+  if (s.persisted === false && (!s.lastBackup || Date.now() - s.lastBackup > T.backupNagDays * 86_400_000))
+    w.push(`NO BACKUP IN ${T.backupNagDays} DAYS · Stats → SYS → Export`)
   if (s.battery && !s.battery.charging && s.walk) {
     if (s.battery.pct <= T.autoEndBatteryPct + 2) w.push(`RUN ENDING · walk stops at ${T.autoEndBatteryPct}%`)
     else if (s.battery.pct <= T.lowBatteryPct) w.push(`BATTERY LOW · ${s.battery.pct}%`)
@@ -120,7 +122,9 @@ export function MapScreen({ onPin, onStreet }: { onPin: (p: Pin) => void; onStre
       <Hud />
       <TurnBanner />
       <main className="map">
-        <MapView onPin={onPin} onStreet={onStreet} />
+        <MapErrorBoundary>
+          <MapView onPin={onPin} onStreet={onStreet} />
+        </MapErrorBoundary>
         <Warnings />
         <div className="map-actions">
           <button className="map-btn" onClick={() => setRouteMenu(true)} disabled={!s.graph}>

@@ -53,7 +53,8 @@ Everything you create stays on your phone. There are no accounts, no backend and
 - Launch it from the home-screen icon, not a browser tab. The screen-awake lock is more reliable that way.
 - If you switch apps or the screen turns off, tracking pauses. The app tells you how long it was paused when you come back.
 - Tap any street on the map to see its name, length and coverage (16 slices).
-- **Export a backup** regularly (Stats → SYS → Export Backup). Clearing Chrome's site data wipes everything.
+- **Back up after walks.** The end-of-walk summary has **SAVE BACKUP** (to Downloads) and **SHARE BACKUP** (to Drive, email or another app). Both are also under Stats → SYS. Clearing Chrome's site data wipes everything.
+- Browsers can't write files to your phone in the background, so automatic backups aren't possible. Each backup takes one tap.
 
 ---
 
@@ -85,7 +86,8 @@ These show as magenta system warnings on the map:
 - `LOW ACCURACY`: the current fix isn't being counted
 - `TRACKING PAUSED`: the app was hidden for a while
 - `SCREEN LOCK NOT HELD`
-- `STORAGE NOT PERSISTENT`: the browser may clear data, so export backups often
+- `NO BACKUP IN 7 DAYS`: only when the browser hasn't granted persistent storage (installing the app usually fixes that)
+- `MAP UNAVAILABLE`: no WebGL; tracking, stats and backup still work
 - `BATTERY LOW` / `RUN ENDING`
 
 ---
@@ -165,7 +167,7 @@ Routes show as a dashed magenta line. The turn banner shows the next turn (LEFT 
   - **IndexedDB** (Dexie) holds walks, every track point, per-segment progress, notes and photos.
   - **OPFS** (Origin Private File System) holds the city data file.
 - **Persistent storage** is requested on first run. If the browser refuses, the app warns you to export backups.
-- **Backups** are a single JSON file you save to the phone. Restoring one replaces all stored data.
+- **Backups** are a single JSON file you save to Downloads or share to another app. Restoring one replaces all stored data.
 - The only network request the app makes on its own is the one-time city download when you tap **LOAD PHILADELPHIA**.
 
 ---

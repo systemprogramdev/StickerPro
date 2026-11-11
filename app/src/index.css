@@ -58,6 +58,8 @@ textarea:focus { outline: 1px solid var(--walked); }
   border-right: 1px solid var(--frame);
   position: relative;
   overflow: hidden;
+  /* Installed, the app draws edge to edge: keep content clear of the status bar and notch. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
 }
 
 .map-screen { flex: 1; display: flex; flex-direction: column; min-height: 0; }
@@ -232,6 +234,7 @@ textarea:focus { outline: 1px solid var(--walked); }
 .lock {
   position: absolute;
   inset: 0;
+  padding-top: env(safe-area-inset-top);
   z-index: 100;
   background: var(--bg);
   display: flex;
