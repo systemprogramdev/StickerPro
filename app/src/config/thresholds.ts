@@ -2,8 +2,10 @@
 export const THRESHOLDS = {
   // Tracking
   maxAccuracyM: 25, // fixes worse than this are stored but not matched
-  gapSeconds: 10, // no fix for longer than this breaks track and coverage
+  gapSeconds: 10, // no fix for longer than this breaks the track (see bridge* below)
   distanceStepM: 5, // minimum movement counted toward walk distance
+  bridgeMaxSeconds: 300, // a gap up to this long can still fill coverage on the same or next segment
+  bridgeMaxSpeedMps: 2, // ...if the straight-line jump across it is no faster than a brisk walk
 
   // Matching
   matchRadiusM: 20,

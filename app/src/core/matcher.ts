@@ -30,6 +30,13 @@ interface Last {
   forward: boolean
 }
 
+// Where the track was when the GPS went quiet (tunnel, covered street, app hidden).
+interface Bridge extends Last {
+  t: number
+  x: number
+  y: number
+}
+
 export class Matcher {
   readonly masks: Uint16Array
   readonly completedAt: Float64Array // 0 = not complete
@@ -37,6 +44,7 @@ export class Matcher {
   private prevT = -Infinity
   private last: Last | null = null
   private alley: { seg: number; ends: number } | null = null
+  private bridge: Bridge | null = null
   private changed = new Set<number>()
   private now = 0
   private readonly g: Graph
@@ -54,6 +62,7 @@ export class Matcher {
     this.prevT = -Infinity
     this.last = null
     this.alley = null
+    this.bridge = null
   }
 
   push(fix: Fix): MatchResult {
@@ -61,7 +70,12 @@ export class Matcher {
     const none: MatchResult = { accepted: false, seg: -1, along: 0, forward: true, updates: [] }
     if (!(fix.acc <= T.maxAccuracyM)) return none
 
-    if (fix.t - this.prevT > T.gapSeconds * 1000) this.reset()
+    if (fix.t - this.prevT > T.gapSeconds * 1000) {
+      const end = this.recent[this.recent.length - 1]
+      const bridge = this.last && end ? { ...this.last, t: this.prevT, x: end.x, y: end.y } : null
+      this.reset()
+      this.bridge = bridge
+    }
     this.prevT = fix.t
     this.now = fix.t
     this.changed.clear()
@@ -70,6 +84,14 @@ export class Matcher {
     this.recent.push({ x, y })
     if (this.recent.length > T.headingWindow) this.recent.shift()
     const heading = this.heading(fix)
+
+    // After a gap, carry on from where the signal was lost if walking could explain the jump.
+    // Only the same or an adjacent segment is filled, so a bridge never crosses a block.
+    const b = this.bridge
+    this.bridge = null
+    if (b && fix.t - b.t <= T.bridgeMaxSeconds * 1000 && Math.hypot(x - b.x, y - b.y) <= (T.bridgeMaxSpeedMps * (fix.t - b.t)) / 1000) {
+      this.last = { seg: b.seg, along: b.along, forward: b.forward }
+    }
 
     const cands = nearbySegments(g, x, y, T.matchRadiusM)
     if (!cands.length) {

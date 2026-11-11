@@ -42,7 +42,7 @@ describe('matcher on the fixture graph', () => {
     expect(slices).toBeLessThanOrEqual(9)
   })
 
-  it('does not fill coverage across a GPS gap', () => {
+  it('does not fill coverage across a GPS gap too fast to have been walked', () => {
     const before = walk(g, [[100, 0], [130, 0]], { seed: 4 })
     const after = walk(g, [[170, 0], [200, 0]], { seed: 5, t0: before[before.length - 1].t + 15_000 })
     const m = run([...before, ...after])
@@ -54,6 +54,26 @@ describe('matcher on the fixture graph', () => {
     // Control: the same fixes without the gap fill the middle and complete it.
     const fixes = walk(g, [[100, 0], [200, 0]], { seed: 4 })
     expect(done(run(fixes), alpha[1])).toBe(true)
+  })
+
+  it('bridges a GPS gap on the same street at walking speed (tunnel, hidden app)', () => {
+    const before = walk(g, [[100, 0], [130, 0]], { seed: 4 })
+    const after = walk(g, [[170, 0], [200, 0]], { seed: 5, t0: before[before.length - 1].t + 60_000 })
+    expect(done(run([...before, ...after]), alpha[1])).toBe(true)
+  })
+
+  it('bridges a gap around a corner onto the adjacent street', () => {
+    const before = walk(g, [P.A0, [80, 0]], { seed: 10 })
+    const after = walk(g, [[100, 12], P.M1, P.B1], { seed: 11, t0: before[before.length - 1].t + 30_000 })
+    const m = run([...before, ...after])
+    expect(done(m, alpha[0])).toBe(true)
+    expect(done(m, seg(g, 4, 'A1', 'M1'))).toBe(true)
+  })
+
+  it('does not bridge a gap longer than the bridge limit', () => {
+    const before = walk(g, [[100, 0], [130, 0]], { seed: 4 })
+    const after = walk(g, [[170, 0], [200, 0]], { seed: 5, t0: before[before.length - 1].t + 400_000 })
+    expect(done(run([...before, ...after]), alpha[1])).toBe(false)
   })
 
   it('walking one of two parallel streets does not credit the other', () => {
