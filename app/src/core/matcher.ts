@@ -105,6 +105,7 @@ export class Matcher {
     let bestScore = Infinity
     for (const c of cands) {
       let score = c.dist
+      if (g.segKind[c.seg] === 2) score += T.pathPenaltyM
       if (heading !== null) score += (axisDiff(heading, c.bearing) / 90) * T.headingPenaltyM
       if (this.last) {
         if (c.seg === this.last.seg) score -= T.sameSegmentBonusM

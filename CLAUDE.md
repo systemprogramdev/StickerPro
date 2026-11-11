@@ -19,7 +19,7 @@ Full spec and milestone order: [BRIEF.md](BRIEF.md). Build one milestone at a ti
 
 ## Prep tool (run in `prep/`)
 - Setup once: `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`
-- City: `.venv/bin/python prep.py --place "Philadelphia, Pennsylvania, USA" --out ../city/` (add `--sectors hoods.geojson --sector-name-field NAME` for neighborhoods, `--include-paths` for footways)
+- City: `.venv/bin/python prep.py --place "Philadelphia, Pennsylvania, USA" --out ../city/` (add `--sectors hoods.geojson --sector-name-field NAME` for neighborhoods, `--park-paths` for paths inside parks (the hosted Philadelphia file uses it), `--include-paths` for every footway)
 - Fixture: `.venv/bin/python prep.py --fixture --out ../fixtures/`
 
 ## Commands (run in `app/`)

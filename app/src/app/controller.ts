@@ -212,6 +212,8 @@ export class Controller {
       const text = await getText()
       const city = await storeCityText(text)
       await this.loadCity(text)
+      // New data can split or rename segments, so re-derive coverage from the raw tracks.
+      if (await db.walks.count()) await this.rebuildProgress()
       const t = city.manifest.totals
       this.toast(`Imported ${city.manifest.city.split(',')[0]}: ${t.segments.toLocaleString()} segments, ${(t.meters / 1609.344).toFixed(1)} mi`)
     } catch (e) {

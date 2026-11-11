@@ -28,6 +28,7 @@ STREET_HIGHWAYS = {
 PATH_HIGHWAYS = {"footway", "path", "cycleway", "steps", "track", "bridleway"}
 EXCLUDED_ACCESS = {"private", "no"}
 EXCLUDED_FOOTWAY = {"sidewalk", "crossing"}
+PARK_TAGS = {"leisure": ["park", "nature_reserve"]}
 
 
 def first(v):
@@ -65,24 +66,46 @@ def round_coord(lon: float, lat: float) -> list[float]:
     return [round(lon, 6), round(lat, 6)]
 
 
+def park_area(place: str):
+    """Union of park polygons, prepared for fast point tests."""
+    import osmnx as ox
+    from shapely import prepared, union_all
+
+    print("Downloading park boundaries ...", file=sys.stderr)
+    parks = ox.features_from_place(place, PARK_TAGS)
+    polys = [geom for geom in parks.geometry if geom.geom_type in ("Polygon", "MultiPolygon")]
+    print(f"  {len(polys)} parks", file=sys.stderr)
+    return prepared.prep(union_all(polys))
+
+
 def build_from_osm(args) -> dict:
     import osmnx as ox
-    from shapely.geometry import LineString
+    from shapely.geometry import LineString, Point
 
     ox.settings.useful_tags_way = list(set(ox.settings.useful_tags_way) | {"service", "access", "foot", "footway", "name", "area"})
     ox.settings.log_console = False
 
-    highways = sorted(STREET_HIGHWAYS | {"service"} | (PATH_HIGHWAYS if args.include_paths else set()))
+    with_paths = args.include_paths or args.park_paths
+    highways = sorted(STREET_HIGHWAYS | {"service"} | (PATH_HIGHWAYS if with_paths else set()))
     custom_filter = f'["highway"~"^({"|".join(highways)})$"]["area"!~"yes"]'
     print(f"Downloading street network for {args.place} ...", file=sys.stderr)
     G = ox.graph_from_place(args.place, network_type="all", custom_filter=custom_filter, simplify=False, retain_all=True)
     print(f"  raw: {len(G.nodes)} nodes, {len(G.edges)} edges", file=sys.stderr)
 
-    drop = [(u, v, k) for u, v, k, d in G.edges(keys=True, data=True) if classify(d, args.include_paths) is None]
-    G.remove_edges_from(drop)
-    G.remove_nodes_from([n for n in list(G.nodes) if G.degree(n) == 0])
+    parks = park_area(args.place) if args.park_paths and not args.include_paths else None
+
+    def kind(u, v, d) -> int | None:
+        k = classify(d, with_paths)
+        if k == KIND_PATH and parks is not None:
+            mid = Point((G.nodes[u]["x"] + G.nodes[v]["x"]) / 2, (G.nodes[u]["y"] + G.nodes[v]["y"]) / 2)
+            if not parks.contains(mid):
+                return None
+        return k
+
     for u, v, k, d in G.edges(keys=True, data=True):
-        d["kind"] = classify(d, args.include_paths)
+        d["kind"] = kind(u, v, d)
+    G.remove_edges_from([(u, v, k) for u, v, k, d in G.edges(keys=True, data=True) if d["kind"] is None])
+    G.remove_nodes_from([n for n in list(G.nodes) if G.degree(n) == 0])
     # Merge pass-through nodes so each segment runs intersection to intersection,
     # but never merge across a change in kind or name.
     G = ox.simplify_graph(G, edge_attr_aggs=None, node_attrs_include=None, edge_attrs_differ=["kind", "name"], remove_rings=False)
@@ -258,7 +281,8 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--place", default="Philadelphia, Pennsylvania, USA", help="OSM place name for the city boundary")
     ap.add_argument("--out", default="city/", help="output directory")
-    ap.add_argument("--include-paths", action="store_true", help="count park paths and footways toward 100%%")
+    ap.add_argument("--include-paths", action="store_true", help="count every footway and path toward 100%%")
+    ap.add_argument("--park-paths", action="store_true", help="count footways and paths inside parks toward 100%%")
     ap.add_argument("--sectors", type=Path, help="GeoJSON of neighborhood polygons")
     ap.add_argument("--sector-name-field", default="name", help="property holding each sector's name")
     ap.add_argument("--fixture", action="store_true", help="write the small unit-test graph instead of a real city")

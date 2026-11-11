@@ -27,8 +27,8 @@ const done: ExpressionSpecification = ['boolean', ['feature-state', 'done'], fal
 const partial: ExpressionSpecification = ['boolean', ['feature-state', 'partial'], false]
 const width = (base: number): ExpressionSpecification => ['interpolate', ['exponential', 1.6], ['zoom'], 11, base * 0.4, 14, base, 18, base * 4]
 
-// Zoom must be the outermost expression, so scale per kind at each zoom stop. Alleys draw thinner.
-const kindWidth = (scale: number): ExpressionSpecification => ['case', ['==', ['get', 'k'], 1], scale, scale * 1.5]
+// Zoom must be the outermost expression, so scale per kind at each zoom stop. Alleys and paths draw thinner.
+const kindWidth = (scale: number): ExpressionSpecification => ['case', ['==', ['get', 'k'], 0], scale * 1.5, scale]
 
 export const streetLayers: LayerSpecification[] = [
   {
@@ -44,7 +44,7 @@ export const streetLayers: LayerSpecification[] = [
     source: 'city',
     layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint: {
-      'line-color': ['case', done, C.walked, partial, '#2B7077', ['==', ['get', 'k'], 1], C.alleyUnwalked, C.streetUnwalked],
+      'line-color': ['case', done, C.walked, partial, '#2B7077', ['==', ['get', 'k'], 0], C.streetUnwalked, C.alleyUnwalked],
       'line-width': ['interpolate', ['exponential', 1.6], ['zoom'], 11, kindWidth(0.4), 14, kindWidth(1), 18, kindWidth(4)],
     },
   },

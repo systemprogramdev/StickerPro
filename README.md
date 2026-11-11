@@ -39,7 +39,7 @@ Everything you create stays on your phone. There are no accounts, no backend and
 
 1. **Open the app** in Chrome on Android: https://systemprogramdev.github.io/StickerPro/
 2. **Install it.** Tap **⤓ INSTALL APP** on the map, or use Chrome's **⋮ → Install app**. The app then runs full screen from your home screen and works with no network.
-3. **Load the city.** Tap **↓ LOAD PHILADELPHIA**. The street data (about 11 MB) downloads once and is stored on the phone.
+3. **Load the city.** Tap **↓ LOAD PHILADELPHIA**. The street data (about 13 MB) downloads once and is stored on the phone.
 4. **Allow location** when Chrome asks.
 5. **Wait for a good GPS fix.** The **GPS** reading in the top bar should be under 25 m.
 6. **Tap ▶ START WALK** and walk. Streets you complete glow cyan, and your raw track is drawn in magenta.
@@ -271,13 +271,16 @@ cd prep
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 
-# A real city (default: Philadelphia)
-.venv/bin/python prep.py --place "Philadelphia, Pennsylvania, USA" --out ../city/
+# A real city (default: Philadelphia). The hosted Philadelphia build adds --park-paths.
+.venv/bin/python prep.py --place "Philadelphia, Pennsylvania, USA" --out ../city/ --park-paths
 
 # With neighborhood sectors from a GeoJSON file
 .venv/bin/python prep.py --place "..." --out ../city/ --sectors hoods.geojson --sector-name-field NAME
 
-# Count park paths and footways too
+# Count footways and paths inside parks (leisure=park or nature_reserve)
+.venv/bin/python prep.py --place "..." --out ../city/ --park-paths
+
+# Count every footway and path, parks or not
 .venv/bin/python prep.py --place "..." --out ../city/ --include-paths
 
 # Regenerate the unit-test fixture
@@ -298,13 +301,13 @@ python3 -m venv .venv
 
 - **Included:** residential, tertiary, secondary, primary (and their `_link` roads), unclassified, living street, pedestrian, and `service=alley`.
 - **Excluded:** motorways and ramps, trunk roads, `access=private|no`, `foot=no`, driveways, parking aisles, and sidewalks or crossings mapped as separate lines.
-- **Optional:** park paths and footways (`--include-paths`).
+- **Optional:** paths inside parks (`--park-paths`, used for the hosted Philadelphia file), or every footway and path (`--include-paths`). Paths draw thin like alleys, and in matching they lose close calls to a street running alongside.
 
 **Philadelphia output** (current build):
 
 ```
-Philadelphia, Pennsylvania, USA: 52,745 segments, 2,981.5 mi total
-  streets 2,621.2 mi · alleys 360.3 mi · paths 0.0 mi
+Philadelphia, Pennsylvania, USA: 59,599 segments, 3,222.3 mi total
+  streets 2,621.2 mi · alleys 360.3 mi · paths 240.8 mi
 ```
 
 ---
@@ -321,7 +324,7 @@ This is version 1: a single JSON file (`*.stickerpro.json`).
     "city": "Philadelphia, Pennsylvania, USA",
     "bounds": [west, south, east, north],
     "builtAt": "2026-11-11T18:28:00+00:00",
-    "totals": { "segments": 52745, "meters": 0, "streetMeters": 0, "alleyMeters": 0, "pathMeters": 0 }
+    "totals": { "segments": 59599, "meters": 0, "streetMeters": 0, "alleyMeters": 0, "pathMeters": 0 }
   },
   "nodes": [[osmId, lat, lon], ...],
   "segments": [{
@@ -463,7 +466,7 @@ Build order and status:
 **Open decisions**
 
 - [ ] **Trunk roads.** These are excluded by default, which leaves out most of Roosevelt Boulevard. Should they count?
-- [ ] **Park paths and footways.** Off by default (`--include-paths`).
+- [x] **Park paths.** Included in the hosted Philadelphia file (`--park-paths`). Footways outside parks are still left out.
 - [ ] **Sector boundaries.** None yet. Supply a neighborhood GeoJSON to enable per-sector progress and "clear this sector".
 - [ ] **Streak day.** Currently any day with a walk that completes at least one new segment.
 - [ ] **Map data format.** GeoJSON for now. Measure load time and memory on the phone before considering PMTiles.

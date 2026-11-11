@@ -18,6 +18,7 @@ export const THRESHOLDS = {
   headingPenaltyM: 15, // score penalty at 90 degrees off the segment axis
   sameSegmentBonusM: 5,
   farSegmentPenaltyM: 8, // candidate not the same or adjacent to the last match
+  pathPenaltyM: 6, // park paths lose close calls to a street running alongside
   gridCellM: 200,
 
   // Planner
