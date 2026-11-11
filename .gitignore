@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dev-dist/
+.DS_Store
+*.local
+city/
+__pycache__/
+.venv/
