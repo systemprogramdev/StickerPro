@@ -3,6 +3,7 @@ import { controller } from '../app/controller'
 import { fmtDist, fmtMi, useApp } from '../app/useApp'
 import { THRESHOLDS as T } from '../config/thresholds'
 import { HOSTED_CITIES } from '../data/cityStore'
+import { promptInstall, useCanInstall } from '../services/install'
 import { dayKey } from '../core/stats'
 import { MapView, type Pin, type StreetInfo } from './MapView'
 import { RouteMenu } from './Overlays'
@@ -69,6 +70,7 @@ function TurnBanner() {
 
 function Warnings() {
   const s = useApp()
+  const canInstall = useCanInstall()
   const w: string[] = []
   if (!s.booting && !s.graph) w.push('NO CITY DATA · load it below or import a file in Settings')
   if (s.gps === 'error') w.push(`GPS ERROR · ${s.gpsError}`)
@@ -82,7 +84,7 @@ function Warnings() {
     if (s.battery.pct <= T.autoEndBatteryPct + 2) w.push(`RUN ENDING · walk stops at ${T.autoEndBatteryPct}%`)
     else if (s.battery.pct <= T.lowBatteryPct) w.push(`BATTERY LOW · ${s.battery.pct}%`)
   }
-  if (!w.length) return null
+  if (!w.length && !canInstall) return null
   return (
     <div className="warnings" role="alert" onClick={() => controller.dismissPaused()}>
       {w.map((t) => (
@@ -90,6 +92,11 @@ function Warnings() {
           ⚠ {t}
         </div>
       ))}
+      {canInstall && (
+        <button className="map-btn go" onClick={() => promptInstall()}>
+          ⤓ INSTALL APP
+        </button>
+      )}
       {!s.booting && !s.graph && !s.busy &&
         HOSTED_CITIES.map((c) => (
           <button key={c.path} className="map-btn go" onClick={() => controller.loadHostedCity(c.path)}>
